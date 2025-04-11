@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import reel from "./reel.js"
+import db from "./db.js"
 
 const client = new djs.Client({
   intents: [
@@ -14,6 +15,7 @@ const client = new djs.Client({
 
 client.on("ready", () => {
   console.log("Logged In")
+  db.init()
 })
 
 client.on("messageCreate", async(msg) => {
@@ -32,7 +34,7 @@ client.on("messageCreate", async(msg) => {
   if(!webhook) {
     webhook = await msg.channel.createWebhook({
       name: 'Reelscord',
-      avatar: 'https://i.imgur.com/AfFp7pu.png',
+      avatar: 'https://cdn.pixabay.com/photo/2021/06/15/12/14/instagram-6338393_1280.png',
     })
   }
 
@@ -41,11 +43,13 @@ client.on("messageCreate", async(msg) => {
 
     const newMsg = msg.content.replace(link, `[Reel Link](${data.data[0].url}.mp4)`)
 
-    await webhook.send({
+    const webMsg = await webhook.send({
       content: newMsg,
       username: `${msg.author.displayName}・[${msg.author.username}]`,
       avatarURL: msg.author.avatarURL()
     })
+
+    db.add(msg.author.id, webMsg.id)
 
     msg.delete()
   } else {
