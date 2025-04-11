@@ -1,29 +1,19 @@
-import { ApifyClient } from 'apify-client';
-
-// Initialize the ApifyClient with API token
-const client = new ApifyClient({
-    token: 'TOKEN',
-});
-
-// Prepare Actor input
-const input = {
-    "reelLinks": [
-        "https://www.instagram.com/reel/DD3Iy3aROKi/"
-    ],
-    "proxyConfiguration": {
-        "useApifyProxy": true
+async function downloadVideo(videoUrl, type = 'instagram') {
+  const response = await fetch('https://apihut.in/api/download/videos', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Avatar-Key': 'avatarhubadmin'
     },
-    "verboseLog": false
-};
+    body: JSON.stringify({
+      video_url: videoUrl,
+      type: type,
+      user_id: ""
+    })
+  });
 
-(async () => {
-    // Run the Actor and wait for it to finish
-    const run = await client.actor("tK6UBWwvP7CwokYEK").call(input);
+  const result = await response.json();
+  console.log(result);
+}
 
-    // Fetch and print Actor results from the run's dataset (if any)
-    console.log('Results from dataset');
-    const { items } = await client.dataset(run.defaultDatasetId).listItems();
-    items.forEach((item) => {
-        console.dir(item);
-    });
-})();
+downloadVideo('https://www.instagram.com/reel/DDi1xKkyBHQ');
