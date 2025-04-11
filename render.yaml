@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: reelscord
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    autoDeploy: true
+    envVars:
+      - key: TOKEN
+        sync: false

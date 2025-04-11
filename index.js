@@ -2,6 +2,7 @@ import djs from "discord.js"
 import dotenv from 'dotenv';
 dotenv.config();
 
+import keepAlive  from "./keepAlive.js";
 import reel from "./reel.js"
 import db from "./db.js"
 
@@ -59,3 +60,4 @@ client.on("messageCreate", async(msg) => {
 })
 
 client.login(process.env.TOKEN)
+keepAlive()
