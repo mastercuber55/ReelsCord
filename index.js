@@ -24,7 +24,7 @@ client.on("messageCreate", async(msg) => {
   if(msg.author.bot) return;
   if (msg.webhookId) return;
 
-  const regex = /https?:\/\/(?:www\.)?instagram\.com\/reel\/[A-Za-z0-9_-]+(?:\?[^\s]*)?/gi;
+  const regex = /https?:\/\/(?:www\.)?instagram\.com\/reel\/[\w-]+(?:\/)?(?:\?[^\s]*)?/gi
   const matches = msg.content.match(regex)
   if(!matches) return;
   const link = matches[0]
