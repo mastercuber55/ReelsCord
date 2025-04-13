@@ -9,3 +9,7 @@ services:
     envVars:
       - key: TOKEN
         sync: false
+      - key: MONGODB
+        sync: false
+      - key: API
+        sync: false

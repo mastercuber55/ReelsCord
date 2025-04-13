@@ -1,5 +1,5 @@
 export default async function(video_url, type = 'instagram') {
-const response = await fetch('https://apihut.in/api/download/videos', {
+const response = await fetch(process.env.API, {
     method: 'POST',
     headers: {
     'Content-Type': 'application/json',
@@ -8,10 +8,12 @@ const response = await fetch('https://apihut.in/api/download/videos', {
     body: JSON.stringify({
     video_url,
     type,
-    // user_id: ""
     })
 });
-
+    
     const result = await response.json();
+    
+    console.log(await fetch(video_url))
+    
     return result
 }
