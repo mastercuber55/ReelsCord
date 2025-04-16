@@ -109,7 +109,7 @@ client.on("messageReactionAdd", async(reaction, user) => {
   const channel = await reaction.message?.guild?.channels?.fetch(channelId)
   if(!channel) return
 
-  channel.send(`${reaction.message.content}\n**${user.displayName}・[${user.author.username}]**`)
+  channel.send(`${reaction.message.content}\n**${user.displayName}・[${user.username}]**`)
 
 })
 
