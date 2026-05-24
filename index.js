@@ -160,6 +160,15 @@ client.on("messageReactionAdd", async (reaction, user) => {
 
 })
 
+process.on("uncaughtException", (error) => {
+  console.error("❌ CRITICAL UNCAUGHT EXCEPTION:", error);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ UNHANDLED PROMISE REJECTION at:", promise, "reason:", reason);
+});
+
 mongoose.connect(process.env.MONGODB);
 client.login(process.env.TOKEN)
 keepAlive()
+
