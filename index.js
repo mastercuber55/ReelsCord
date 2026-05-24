@@ -79,29 +79,28 @@ client.on("messageCreate", async (message) => {
 
   if (message.webhookId) return;
 
-  const regex = /https?:\/\/[^\s]+/gi;
+  const regex = /https?:\/\/[^\s]+/i;
   const matches = message.content.match(regex)
   if (!matches) return;
 
-  try {
-    const url = new URL(matches[0])
-    const isInstagram = ["instagram.com", "www.instagram.com"].includes(url.hostname)
+  const url = new URL(matches[0])
+    const isInstagram = url.hostname === "instagram.com" || url.hostname === "www.instagram.com";
     const isReelOrPost = ["/reel/", "/reels/", "/p/"].some(path => url.pathname.startsWith(path))
 
-    if (!isReelOrPost) return;
+    if (!isInstagram || !isReelOrPost) return;
 
     message.react("<:loading:1360808684825084095>")
 
     url.search = "" // Clean the URL, remove trackers.
 
-    url.hostname = url.hostname.replace("instagram.com", "kkinstagram.com")
+    url.hostname = "kkinstagram.com"
 
     const webhooks = await message.channel.fetchWebhooks()
-    let webhook = webhooks.first()
+    let webhook = webhooks.find(wh => wh.name === client.user.username)
 
     if (!webhook) {
       webhook = await message.channel.createWebhook({
-        name: 'Reelscord',
+        name: client.user.username,
         avatar: client.user.avatarURL(),
       })
     }
@@ -114,9 +113,6 @@ client.on("messageCreate", async (message) => {
 
     users.add(message.author.id, webMsg.id)
     message.delete()
-  } catch (error) {
-    console.log(error)
-  }
 
 })
 
