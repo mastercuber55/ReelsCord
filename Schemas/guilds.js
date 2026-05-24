@@ -24,4 +24,8 @@ guild.statics.get = async function (guildId) {
     return doc?.channelId || null;
 };
 
+guild.statics.del = async function (guildId) {
+    return this.findByIdAndDelete(guildId);
+};
+
 export default model("guilds", guild)

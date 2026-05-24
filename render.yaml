@@ -11,5 +11,3 @@ services:
         sync: false
       - key: MONGODB
         sync: false
-      - key: API
-        sync: false

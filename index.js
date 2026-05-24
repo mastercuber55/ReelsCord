@@ -1,10 +1,9 @@
-import djs from "discord.js"
+import djs, { EmbedBuilder } from "discord.js"
 import dotenv from 'dotenv';
 import mongoose from "mongoose"
 dotenv.config();
 
-import keepAlive  from "./utils/keepAlive.js";
-import reel from "./utils/reel.js"
+import keepAlive from "./utils/keepAlive.js";
 import users from "./Schemas/users.js"
 import guilds from "./Schemas/guilds.js"
 
@@ -26,90 +25,138 @@ client.on("ready", () => {
   console.log("Logged In")
 })
 
-client.on("messageCreate", async(message) => {
+async function handleCommands(message) {
 
-  if(message.author.bot) return;
+    const cmd = message.content.split(" ")[1]
 
-  if(message.mentions.has(client.user)) {
-    const reaction = await message.react("<:loading:1360808684825084095>")
-    
-    const channel = message.mentions?.channels?.first()
+    if(cmd == "set") {
+      const channel = message.mentions?.channels?.first()
 
-    if(channel) {
-      await guilds.set(message.guild.id, channel.id)
+      if (!message.member.permissions.has(["ManageGuild", "Administrator"], false)) {
+          await message.reply("❌ You need the **Manage Server** or **Administrator** permission to change the logging channel.");
+          message.react("❌")
+          return; 
+      }
+
+      if (channel) {
+        await guilds.set(message.guild.id, channel.id)
+        message.react("✅")
+      } else {
+        message.react("❌")
+      }
+
+
+    } else if(cmd == "remove") {
+      if (!message.member.permissions.has(["ManageGuild", "Administrator"], false)) {
+          await message.reply("❌ You need the **Manage Server** or **Administrator** permission to change the logging channel.");
+          message.react("❌")
+          return; 
+      }
+      await guilds.del(message.guild.id)
       message.react("✅")
     } else {
-      message.react("❌")
-    }
+      const embed = new EmbedBuilder()
+        .setTitle("Reelscoord ・Usage")
+        .setDescription([
+          "- Send 🔗 reel link to convert it to video.",
+          "- React with ❌ to delete your reel.",
+          `- **<@${client.user.id}> set #channel** to set a logging channel.`,
+          `- **<@${client.user.id}> remove** to remove logging channel.`
+        ].join("\n"))
+        .setColor("Random")
 
-    reaction.remove()
+        message.channel.send({ embeds: [embed] })
+    }
+}
+
+client.on("messageCreate", async (message) => {
+
+  if (message.author.bot) return;
+
+  if (message.mentions.has(client.user)) {
+    return await handleCommands(message)
   }
 
   if (message.webhookId) return;
 
-  const regex = /https?:\/\/(?:www\.)?instagram\.com\/reel\/[\w-]+(?:\/)?(?:\?[^\s]*)?/gi
+  const regex = /https?:\/\/[^\s]+/gi;
   const matches = message.content.match(regex)
-  if(!matches) return;
+  if (!matches) return;
 
-  message.react("<:loading:1360808684825084095>")
+  try {
+    const url = new URL(matches[0])
+    const isInstagram = ["instagram.com", "www.instagram.com"].includes(url.hostname)
+    const isReelOrPost = ["/reel/", "/reels/", "/p/"].some(path => url.pathname.startsWith(path))
 
-  const link = matches[0]
+    if (!isReelOrPost) return;
 
-  const webhooks = await message.channel.fetchWebhooks()
-  let webhook = webhooks.first()
+    message.react("<:loading:1360808684825084095>")
 
-  if(!webhook) {
-    webhook = await message.channel.createWebhook({
-      name: 'Reelscord',
-      avatar: 'https://cdn.pixabay.com/photo/2021/06/15/12/14/instagram-6338393_1280.png',
-    })
-  }
+    url.search = "" // Clean the URL, remove trackers.
 
-  const data = await reel(link)
-  if(data.success == 1) {
+    url.hostname = url.hostname.replace("instagram.com", "kkinstagram.com")
 
-    const newMsg = message.content.replace(link, `[Reel](${data.data[0].url}.mp4)`)
+    const webhooks = await message.channel.fetchWebhooks()
+    let webhook = webhooks.first()
+
+    if (!webhook) {
+      webhook = await message.channel.createWebhook({
+        name: 'Reelscord',
+        avatar: client.user.avatarURL(),
+      })
+    }
 
     const webMsg = await webhook.send({
-      content: newMsg,
-      username: `${message.author.displayName}・[${message.author.username}]`,
+      content: `[Instagram Reel](${url.toString()})`,
+      username: message.author.username,
       avatarURL: message.author.avatarURL()
     })
 
     users.add(message.author.id, webMsg.id)
     message.delete()
-  } else {
-    console.log(data.message)
+  } catch (error) {
+    console.log(error)
   }
 
 })
 
-client.on("messageReactionAdd", async(reaction, user) => {
+client.on("messageReactionAdd", async (reaction, user) => {
   
-  await reaction.message.fetch()
+  const { message } = reaction
 
-  if(!reaction.message.webhookId) return;
+  await message.fetch()
+
+  if (!message.webhookId) return;
   
   const emoji = reaction.emoji.name
-  if(emoji != "❌") return;
+  if (emoji != "❌") return;
 
-  const messageId = reaction.message.id
+  const messageId = message.id
 
   const has = await users.has(user.id, messageId)
-  if(!has) return reaction.remove()
+  if (!has) return reaction.remove()
 
   users.del(user.id, messageId)
 
-  const content = reaction.message.content
+  const content = message.content
 
-  reaction.message.delete()
   
-  const channelId = await guilds.get(reaction.message?.guildId)
-  if(!channelId) return
-  const channel = await reaction.message?.guild?.channels?.fetch(channelId)
-  if(!channel) return
+  const channelId = await guilds.get(message?.guildId)
+  
+  message.delete()  
 
-  channel.send(`${reaction.message.content}\n**${user.displayName}・[${user.username}]**`)
+  if (!channelId) return
+
+  const channel = await message?.guild?.channels?.fetch(channelId)
+  if (!channel) return
+
+  const perms = channel.permissionsFor(message.guild.members.me)
+  
+  if (!perms || !perms.has(['ViewChannel', 'SendMessages'])) {
+    return message.channel.send("⚠️ Lacking permissions to view or send message to logging channel!")
+  }
+
+  channel.send(`${reaction.message.content}\n**${user.username}**`)
 
 })
 
